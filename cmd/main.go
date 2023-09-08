@@ -10,12 +10,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var nextID int
+var Token = "123456"
+
 type Product struct {
 	ID           int     `json:"id,omitempty"`
 	Name         string  `json:"name,omitempty"`
 	Quantity     int     `json:"quantity,omitempty"`
 	Code_Value   string  `json:"code_value,omitempty"`
-	IS_Published bool    `json:"is_published,omitempty"`
+	IS_Published bool    `json:"is_published"`
+	Expiration   string  `json:"expiration,omitempty"`
+	Price        float64 `json:"price,omitempty"`
+}
+
+type Request struct {
+	ID           int     `json:"id,omitempty"`
+	Name         string  `json:"name,omitempty"`
+	Quantity     int     `json:"quantity,omitempty"`
+	Code_Value   string  `json:"code_value,omitempty"`
+	IS_Published bool    `json:"is_published"`
 	Expiration   string  `json:"expiration,omitempty"`
 	Price        float64 `json:"price,omitempty"`
 }
@@ -31,10 +44,13 @@ func main() {
 		return
 	}
 
+	nextID = len(DataSlice)
+
 	server.GET("/ping", ping)
 	server.GET("/products", allProducts)
 	server.GET("/products/:id", searchById)
 	server.GET("/products/search", getProductsByPrice)
+	server.POST("/products", addProduct)
 
 	server.Run(":8080")
 
@@ -75,4 +91,44 @@ func getProductsByPrice(ctx *gin.Context) {
 		}
 	}
 	ctx.JSON(http.StatusAccepted, productsList)
+}
+
+func addProduct(ctx *gin.Context) {
+
+	// parse the json request body into a Request struct
+	var req Request
+	if err := ctx.ShouldBind(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// validate the requested data
+	if req.Name == "" || req.Code_Value == "" || req.Quantity == 0 || req.Expiration == "" || req.Price == 0.0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Can't add empty data"})
+		return
+	}
+
+	// check if code_value is unique
+	for _, product := range DataSlice {
+		if product.Code_Value == req.Code_Value {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Can't repeat a code value"})
+			return
+		}
+	}
+
+	//TODO:
+	// 1) Los tipos de datos deben coincidir con los definidos en el planteo del problema.
+	// 2) La fecha de vencimiento debe tener el formato: XX/XX/XXXX, además debemos verificar que día,
+	// mes y año sean valores válidos.
+
+	// generate an unique id
+	nextID++
+	req.ID = nextID
+
+	// add the new product to the slice of json
+	DataSlice = append(DataSlice, Product(req))
+
+	//return the newly generated product as a response
+	ctx.JSON(http.StatusCreated, req)
+
 }
