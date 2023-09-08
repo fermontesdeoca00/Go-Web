@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
 
 	loadJson "github.com/fermontesdeoca00/Go-Web/internal"
@@ -116,10 +117,48 @@ func addProduct(ctx *gin.Context) {
 		}
 	}
 
-	//TODO:
-	// 1) Los tipos de datos deben coincidir con los definidos en el planteo del problema.
-	// 2) La fecha de vencimiento debe tener el formato: XX/XX/XXXX, además debemos verificar que día,
-	// mes y año sean valores válidos.
+	// check if the data type is correct
+	if reflect.ValueOf(req.Name).Kind() != reflect.String {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Name must be a string"})
+		return
+	}
+	if reflect.ValueOf(req.Quantity).Kind() != reflect.Int {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Quantity must be a integer"})
+		return
+	}
+	if reflect.ValueOf(req.Code_Value).Kind() != reflect.String {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Code_Value must be a string"})
+		return
+	}
+	if reflect.ValueOf(req.IS_Published).Kind() != reflect.Bool {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "IS_Published must be a boolean"})
+		return
+	}
+	if reflect.ValueOf(req.Expiration).Kind() != reflect.String {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Expiration must be a string"})
+		return
+	}
+	if reflect.ValueOf(req.Price).Kind() != reflect.Float64 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Price must be a float"})
+		return
+	}
+
+	// req.Expiration must be a valid date with format XX/XX/XXXX and day, month and year must be valid values
+	if len(req.Expiration) != 10 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Expiration must be a valid date with format XX/XX/XXXX"})
+		return
+	}
+	if req.Expiration[2] != '/' || req.Expiration[5] != '/' {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Expiration must be a valid date with format XX/XX/XXXX"})
+		return
+	}
+	day, _ := strconv.Atoi(req.Expiration[0:2])
+	month, _ := strconv.Atoi(req.Expiration[3:5])
+	year, _ := strconv.Atoi(req.Expiration[6:10])
+	if day < 1 || day > 31 || month < 1 || month > 12 || year < 0 || year > 2023 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Expiration must be a valid date with format XX/XX/XXXX"})
+		return
+	}
 
 	// generate an unique id
 	nextID++
