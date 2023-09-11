@@ -12,6 +12,9 @@ type Repository interface {
 	GetByID(id int) (domain.Product, error)
 	SearchByPrice(price float64) []domain.Product
 	Create(product domain.Product) (domain.Product, error)
+	// new methods
+	Update(id int, product domain.Product) (domain.Product, error)
+	Delete(id int) error
 }
 
 // declaration of the struct repository that implements the interface Repository
@@ -66,4 +69,29 @@ func (r *repository) ValidateCodeValue(codeValue string) bool {
 		}
 	}
 	return true
+}
+
+// declaration of the function Update that updates a product
+func (r *repository) Update(id int, product domain.Product) (domain.Product, error) {
+	for i, p := range r.list {
+		if p.ID == id {
+			if !r.ValidateCodeValue(product.Code_Value) {
+				return domain.Product{}, errors.New("code value already exists")
+			}
+			r.list[i] = product
+			return product, nil
+		}
+	}
+	return domain.Product{}, errors.New("product not found")
+}
+
+// declaration of the function Delete that deletes a product
+func (r *repository) Delete(id int) error {
+	for i, p := range r.list {
+		if p.ID == id {
+			r.list = append(r.list[:i], r.list[i+1:]...)
+			return nil
+		}
+	}
+	return errors.New("product not found")
 }
