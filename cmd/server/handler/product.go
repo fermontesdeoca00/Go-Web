@@ -130,3 +130,102 @@ func (h *productHandler) Post() gin.HandlerFunc {
 		c.JSON(http.StatusCreated, p)
 	}
 }
+
+// Delete function that deletes a product by ID
+func (h *productHandler) Delete() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		idParam := c.Param("id")
+		id, err := strconv.Atoi(idParam)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
+			return
+		}
+		err = h.s.Delete(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "product deleted"})
+	}
+}
+
+// Put function that updates a product by ID
+func (h *productHandler) Put() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		idParam := c.Param("id")
+		id, err := strconv.Atoi(idParam)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
+			return
+		}
+		var product domain.Product
+		err = c.ShouldBindJSON(&product)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product"})
+			return
+		}
+		validate, err := ValidateEmpty(&product)
+		if !validate {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		validate, err = ValidateExpirationDate(&product)
+		if !validate {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		p, err := h.s.Update(id, product)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, p)
+	}
+}
+
+// Patch function that updates a product by ID
+
+func (h *productHandler) Patch() gin.HandlerFunc {
+	type Request struct {
+		Name         string  `json:"name,omitempty"`
+		Quantity     int     `json:"quantity,omitempty"`
+		Code_Value   string  `json:"code_value,omitempty"`
+		IS_Published bool    `json:"is_published"`
+		Expiration   string  `json:"expiration,omitempty"`
+		Price        float64 `json:"price,omitempty"`
+	}
+	return func(c *gin.Context) {
+		var r Request
+		idParam := c.Param("id")
+		id, err := strconv.Atoi(idParam)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
+			return
+		}
+		if err := c.ShouldBindJSON(&r); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product"})
+			return
+		}
+		update := domain.Product{
+			Name:         r.Name,
+			Quantity:     r.Quantity,
+			Code_Value:   r.Code_Value,
+			IS_Published: r.IS_Published,
+			Expiration:   r.Expiration,
+			Price:        r.Price,
+		}
+		if update.Expiration != "" {
+			validate, err := ValidateExpirationDate(&update)
+			if !validate {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+		}
+		p, err := h.s.Update(id, update)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, p)
+	}
+}
