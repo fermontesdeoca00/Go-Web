@@ -11,6 +11,9 @@ type Service interface {
 	GetByID(id int) (domain.Product, error)
 	SearchByPrice(pricce float64) ([]domain.Product, error)
 	Create(product domain.Product) (domain.Product, error)
+	// new methods tp4
+	Update(id int, product domain.Product) (domain.Product, error)
+	Delete(id int) error
 }
 
 type service struct {
@@ -49,6 +52,43 @@ func (s *service) SearchByPrice(price float64) ([]domain.Product, error) {
 // declaration of the function Create that creates a new product
 func (s *service) Create(product domain.Product) (domain.Product, error) {
 	p, err := s.r.Create(product)
+	if err != nil {
+		return domain.Product{}, err
+	}
+	return p, nil
+}
+
+// declaration of the delete function that deletes a product
+func (s *service) Delete(id int) error {
+	err := s.r.Delete(id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// declaration of the update function that updates a product
+func (s *service) Update(id int, product domain.Product) (domain.Product, error) {
+	p, err := s.r.GetByID(id)
+	if err != nil {
+		return domain.Product{}, err
+	}
+	if product.Name != "" {
+		p.Name = product.Name
+	}
+	if product.Price > 0 {
+		p.Price = product.Price
+	}
+	if product.Code_Value != "" {
+		p.Code_Value = product.Code_Value
+	}
+	if product.Expiration != "" {
+		p.Expiration = product.Expiration
+	}
+	if product.Quantity > 0 {
+		p.Quantity = product.Quantity
+	}
+	p, err = s.r.Update(id, p)
 	if err != nil {
 		return domain.Product{}, err
 	}
