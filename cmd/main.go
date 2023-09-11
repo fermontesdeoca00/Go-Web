@@ -30,6 +30,9 @@ func main() {
 		products.GET("/:id", productHandler.GetByID())
 		products.GET("/search", productHandler.SearchByPrice())
 		products.POST("/", productHandler.Post())
+		products.DELETE("/:id", productHandler.Delete())
+		products.PUT("/:id", productHandler.Put())
+		products.PATCH("/:id", productHandler.Patch())
 	}
 
 	server.Run(":8080")
